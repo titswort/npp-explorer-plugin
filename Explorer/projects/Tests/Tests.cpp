@@ -3,6 +3,7 @@
 #include "Explorer.h"
 
 #include <iostream> // For printing to console
+#include <Windows.h>
 
 /* WSTRING stuff */
 #include <locale>
@@ -14,6 +15,9 @@
 #include <ShlObj.h>
 #include "ContextMenu.h"
 #include <atlcomcli.h>
+
+// Directory Index Includes
+#include "DirectoryIndex.h"
 
 using namespace std;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -144,7 +148,94 @@ namespace Tests
 		/******************************************/
 		
 		/* Directory Index Unit Tests (Eric Prather) */
+		// See also: void QuickOpenDlg::setCurrentPath(const std::filesystem::path& currentPath)
 
+		// Initalize a directory index.
+		TEST_METHOD(DIdxInit)
+		{
+			DirectoryIndex di; // Constructor called
+			WCHAR wide_text[MAX_PATH];
+			LPWSTR dest = wide_text;
+			_writeMyDesktopPath(&dest);
+			wstring formattedPath = dest;
+			
+			di.init(formattedPath);
+		}
+
+		// Initalizes AND BUILDS
+		TEST_METHOD(DIdxBuild)
+		{
+			DirectoryIndex di; // Constructor called
+			WCHAR wide_text[MAX_PATH];
+			LPWSTR dest = wide_text;
+			_writeMyDesktopPath(&dest);
+			wstring formattedPath = dest;
+			di.init(formattedPath);
+			// end of setup, begin load
+
+			di.build();
+		}
+
+		// Makes sure a directory index built about a certain
+		// directory remains in that directory and can identify itself.
+		TEST_METHOD(DIdxLoadIntoDir)
+		{
+			DirectoryIndex di; // Constructor called
+			WCHAR wide_text[MAX_PATH];
+			LPWSTR dest = wide_text;
+			_writeMyDesktopPath(&dest);
+			wstring formattedPath = dest;
+			di.init(formattedPath);
+			di.build();
+			// end of setup, begin load
+
+			std::filesystem::path myPath = di.GetCurrentDir();
+			Assert::IsTrue((myPath) == formattedPath);
+		}
+
+		// Verifies that at least 1 OTHER file or directory
+		// were found in this query.
+		TEST_METHOD(DIdxRealFile)
+		{
+			DirectoryIndex di; // Constructor called
+			WCHAR wide_text[MAX_PATH];
+			LPWSTR dest = wide_text;
+			_writeMyDesktopPath(&dest);
+			wstring formattedPath = dest;
+			di.init(formattedPath);
+			di.build();
+			// end of setup, begin load
+
+			std::vector<std::filesystem::path> output;
+			output = di.GetFileIndex();
+
+			// AT LEAST 2 things are present in My Documents:
+			// 1. "."
+			// 2. "../"
+			Assert::IsTrue(output.size() > (size_t)2);
+		}
+
+		// Loops through all of the files found in a given 
+		// directory index and make sure the non-existant
+		// file "imnotarealfile.lmao" is not within them.
+		TEST_METHOD(DIdxFakeFile)
+		{
+			DirectoryIndex di; // Constructor called
+			WCHAR wide_text[MAX_PATH];
+			LPWSTR dest = wide_text;
+			_writeMyDesktopPath(&dest);
+			wstring formattedPath = dest;
+			di.init(formattedPath);
+			di.build();
+			std::vector<std::filesystem::path> output;
+			output = di.GetFileIndex();
+			// end of setup, begin load
+
+			for each (std::filesystem::path p in output)
+			{
+				Assert::IsTrue(p.generic_string().find("imnotarealfile.lmao") == string::npos);
+			}
+		}
 
 		/*********************************************/
 
@@ -164,8 +255,12 @@ namespace Tests
 			return 1;
 		}
 
-		/// <summary>Takes a regular string and makes it wide.</summary>
-		/// <remarks>https://stackoverflow.com/questions/2573834/c-convert-string-or-char-to-wstring-or-wchar-t</remarks>
+		/// <summary>Takes a regular string and makes it wide. Free storage.</summary>
+		/// <param name="s"> The regular string to convert to a wide string </paramref>
+		/// <returns>1-byte-wide ascii to 2-byte-wide tchar equivalents.</returns>
+		/// <remarks>
+		/// https://stackoverflow.com/questions/2573834/c-convert-string-or-char-to-wstring-or-wchar-t
+		/// </remarks>
 		wstring* _widenString(string s)
 		{
 			// I couldn't figure out how to use codecvt_utf8 in a timely manner.
@@ -173,6 +268,16 @@ namespace Tests
 			// converter.
 			wstring* newStr = new wstring(s.begin(), s.end());
 			return newStr;
+		}
+
+		///<summary>Finds the "My Documents" folder.</summary>
+		///<param name="dest">Overwriten with file path of My Documents</param>
+		void _writeMyDesktopPath(LPWSTR* dest)
+		{
+			HRESULT result = SHGetFolderPath(NULL, CSIDL_DESKTOP, NULL, SHGFP_TYPE_CURRENT, *dest);
+			cout << "My Documents: " << *dest << endl;
+			// For some reason, this assert was failing even though I think the above call is fine.
+			Assert::IsTrue(result == S_OK);
 		}
 	};
 }
