@@ -1,6 +1,28 @@
 #include "pch.h"
 #include "CppUnitTest.h"
 #include "Explorer.h"
+#include "FavesDialog.h"
+#include <assert.h>
+
+
+#include <shlobj.h>
+
+#include "ExplorerResource.h"
+
+
+#include <dbt.h>
+#include <shellapi.h>
+#include <shlwapi.h>
+#include <shlobj.h>
+
+#include "Explorer.h"
+#include "ExplorerDialog.h"
+#include "ExplorerResource.h"
+#include "NewDlg.h"
+#include "ToolTip.h"
+#include "resource.h"
+#include "NppInterface.h"
+
 
 #include <iostream>
 
@@ -21,34 +43,104 @@
 #include "ToolTip.h"
 #include "resource.h"*/
 
-#include <ShlObj.h>
-#include "ContextMenu.h"
 
 using namespace std;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
-
 namespace Tests
 {
 	TEST_CLASS(Tests)
 	{
 	public:
 
-		TEST_METHOD(BoilerplateTest)
+		//Tests for Faves Dialog
+		TEST_METHOD(FavesInit)
 		{
-			cout << "Hello world! This is Group 36's test framework!" << endl;
-			int foo = _documentedMethod("some value");
-			Assert::IsTrue(2 + 2 == 4);
+			HINSTANCE hInst{};
+			NppData nppData{};
+			LPTSTR pCurrentElement{};
+			ExProp* prop{};
+
+
+			FavesDialog dlg;
+			dlg.init(hInst, nppData, pCurrentElement, prop); // This just tests if FavesInit intializes properly
 		}
 
-		TEST_METHOD(SettingsLoadTest)
+
+		TEST_METHOD(AddToFavsA)
 		{
-			//loadSettings();
+
+			HINSTANCE hInst{};
+			NppData nppData{};
+			LPTSTR pCurrentElement{};
+			ExProp* prop{};
+
+			FavesDialog dlg;
+			dlg.init(hInst, nppData, pCurrentElement, prop);
+			dlg.doDialog(true); // StaticDialog.create() fails
+			dlg.AddToFavorties(true, pCurrentElement);
+
 		}
 
-		TEST_METHOD(ContextMenuInit)
+		TEST_METHOD(AddToFavsB)
 		{
-			ContextMenu cm;
+
+			HINSTANCE hInst{};
+			NppData nppData{};
+			LPTSTR pCurrentElement{};
+			ExProp* prop{};
+
+			FavesDialog dlg;
+			dlg.init(hInst, nppData, pCurrentElement, prop);
+			dlg.doDialog(true); // StaticDialog.create() fails
+			dlg.AddToFavorties(false, pCurrentElement);
+
 		}
+
+		TEST_METHOD(SessionSave)
+			{
+
+				HINSTANCE hInst{};
+				NppData nppData{};
+				LPTSTR pCurrentElement{};
+				ExProp* prop{};
+
+				FavesDialog dlg;
+				dlg.init(hInst, nppData, pCurrentElement, prop);
+				dlg.doDialog(true); // StaticDialog.create() fails
+				dlg.SaveSession();
+			}
+
+
+		TEST_METHOD(FavesDestroy)
+			{
+				HINSTANCE hInst{};
+				NppData nppData{};
+				LPTSTR pCurrentElement{};
+				ExProp* prop{};
+
+
+				FavesDialog dlg;
+				dlg.init(hInst, nppData, pCurrentElement, prop);
+				dlg.destroy(); //Allocater<Item Element>	>::size() Fails
+			}
+
+		TEST_METHOD(FavesDestructor)
+		{
+			HINSTANCE hInst{};
+			NppData nppData{};
+			LPTSTR pCurrentElement{};
+			ExProp* prop{};
+
+			
+			FavesDialog *dlg = new FavesDialog;
+			dlg->init(hInst, nppData, pCurrentElement, prop);
+			//dlg.~FavesDialog();
+			delete dlg;
+			assert(dlg == NULL); //This should cause a failurre as dlg is deallocated
+		}
+
+
+
 
 		// Write your unit tests here or in a separate testing file.
 		// For separate files, make sure to use the correct namespace, macros and types. 
