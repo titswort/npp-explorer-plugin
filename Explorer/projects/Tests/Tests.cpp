@@ -2,6 +2,7 @@
 #include "CppUnitTest.h"
 #include "Explorer.h"
 
+#include <assert.h>
 #include <iostream>
 
 // Context Menu Includes
@@ -21,8 +22,9 @@
 #include "ToolTip.h"
 #include "resource.h"*/
 
-#include <ShlObj.h>
-#include "ContextMenu.h"
+#include "DragDropImpl.h"
+#include <shlobj.h>
+#include "ExplorerResource.h"
 
 using namespace std;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -32,24 +34,50 @@ namespace Tests
 	TEST_CLASS(Tests)
 	{
 	public:
+		//Tests for Drag and Drop
 
-		TEST_METHOD(BoilerplateTest)
+		TEST_METHOD(CIDDropSourceInit)
 		{
-			cout << "Hello world! This is Group 36's test framework!" << endl;
-			int foo = _documentedMethod("some value");
-			Assert::IsTrue(2 + 2 == 4);
+			CIDropSource VarA;
+		}
+		TEST_METHOD(CIDDropSourceDestruct)
+		{
+			CIDropSource* VarA = new CIDropSource{};
+			delete VarA;
+			assert(VarA == NULL);
+		}
+		TEST_METHOD(CIDataObjectInit)
+		{
+			CIDropSource VarA{};
+			CIDataObject VarB(&VarA);
 		}
 
-		TEST_METHOD(SettingsLoadTest)
+		TEST_METHOD(CIDataObjectDestruct)
 		{
-			//loadSettings();
+			CIDropSource VarA{};
+			CIDataObject* VarB = new CIDataObject(&VarA);
+			delete VarB;
+			assert(VarB == NULL);
+
 		}
 
-		TEST_METHOD(ContextMenuInit)
+		TEST_METHOD(DataObjectAddRefTest)
 		{
-			ContextMenu cm;
+			CIDropSource VarA{};
+			CIDataObject VarB(&VarA);
+
+			STDMETHODIMP_(ULONG) C = VarB.AddRef();
+			assert(C != NULL);
+
 		}
 
+		TEST_METHOD(DataObjectReleaseTest)
+		{
+			CIDropSource VarA{};
+			CIDataObject VarB(&VarA);
+			STDMETHODIMP_(ULONG) D = VarB.Release();
+			assert(D != NULL);
+		}
 		// Write your unit tests here or in a separate testing file.
 		// For separate files, make sure to use the correct namespace, macros and types. 
 		// Be sure to _at least_ include CppUnitTest.h.
