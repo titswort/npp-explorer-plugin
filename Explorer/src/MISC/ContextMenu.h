@@ -32,10 +32,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ExplorerResource.h"
 #include "NewDlg.h"
 #include "window.h"
+#include "FavesDialog.h"
+#include "nppexec_msgs.h"
 #include <malloc.h>
 #include <vector>
 #include <string>
 #include <commctrl.h>
+#include <atlcomcli.h>
+#include <ShlObj.h>
+
 
 
 struct __declspec(uuid("000214e6-0000-0000-c000-000000000046")) IShellFolder;

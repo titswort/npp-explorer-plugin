@@ -11,10 +11,8 @@
 #include <string>
 
 // Context Menu Includes
-
-#include <ShlObj.h>
 #include "ContextMenu.h"
-#include <atlcomcli.h>
+
 
 // Directory Index Includes
 #include "DirectoryIndex.h"
