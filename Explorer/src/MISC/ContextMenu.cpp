@@ -161,7 +161,7 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 
 	/************************************* modification for notepad ***********************************/
 	HMENU		hMainMenu		= ::CreatePopupMenu();
-	HMENU		hMenuNppExec	= ::CreatePopupMenu();
+	HMENU		hMenuNppExec    = NULL; 
 	bool		isFolder		= (_strFirstElement[_strFirstElement.size()-1] == '\\');
 	DWORD		dwExecVer		= 0;
 	DWORD		dwExecState		= 0;
@@ -196,6 +196,7 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 		TCHAR					TEMP[MAX_PATH];
 		WIN32_FIND_DATA			Find			= {0};
 		HANDLE					hFind			= NULL;
+		hMenuNppExec = ::CreatePopupMenu();
 
 		/* initialize scripts */
 		_strNppScripts.clear();
