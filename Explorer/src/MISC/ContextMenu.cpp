@@ -167,16 +167,11 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 	::GetModuleFileName((HMODULE)hInst, szPath, MAX_PATH);
 
 	/* get version information */
-	CommunicationInfo	ci;
-	ci.srcModuleName	= PathFindFileName(szPath);
-	ci.internalMsg		= NPEM_GETVERDWORD;
-	ci.info				= &dwExecVer;
+	CommunicationInfo	ci = MakeCommunicationInfo(szPath, NPEM_GETVERDWORD, &dwExecVer);
 	::SendMessage(hWndNpp, NPPM_MSGTOPLUGIN, (WPARAM)exProp.nppExecProp.szAppName, (LPARAM)&ci);
 	
 	/* get acivity state of NppExec */
-	ci.srcModuleName	= PathFindFileName(szPath);
-	ci.internalMsg		= NPEM_GETSTATE;
-	ci.info				= &dwExecState;
+	ci = MakeCommunicationInfo(szPath, NPEM_GETSTATE, &dwExecState);
 	::SendMessage(hWndNpp, NPPM_MSGTOPLUGIN, (WPARAM)exProp.nppExecProp.szAppName, (LPARAM)&ci);
 
 	/* Add notepad menu items */
@@ -465,6 +460,21 @@ void ContextMenu::ConfigurePIDHandles(LPCONTEXTMENU pContextMenu, int& menuType)
 	}
 	return;
 }
+
+/// <summary>
+/// Creates a struct used to help with tracking inter-application 
+/// communication based off of the current Notepad++ executable
+/// ID.
+/// </summary>
+CommunicationInfo ContextMenu::MakeCommunicationInfo(TCHAR srcModuleName[MAX_PATH], long intMsg, DWORD* version)
+{
+	CommunicationInfo ci;
+	ci.srcModuleName = PathFindFileName(srcModuleName);
+	ci.internalMsg = intMsg;
+	ci.info = version;
+	return ci;
+}
+
 
 
 void ContextMenu::InvokeCommand (LPCONTEXTMENU pContextMenu, UINT idCommand)
