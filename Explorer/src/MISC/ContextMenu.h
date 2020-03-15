@@ -40,7 +40,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <commctrl.h>
 #include <atlcomcli.h>
 #include <ShlObj.h>
-
+#include <stdexcept>
 
 
 struct __declspec(uuid("000214e6-0000-0000-c000-000000000046")) IShellFolder;
@@ -90,6 +90,9 @@ public:
 	void SetObjects(std::wstring strObject);
 	void SetObjects(std::vector<std::wstring> strArray);
 	UINT ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent, POINT pt, bool normal = true);
+
+protected:
+	void ConfigurePIDHandles(LPCONTEXTMENU pContextMenu, int& menuType);
 
 private:
 	static LRESULT CALLBACK HookWndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);

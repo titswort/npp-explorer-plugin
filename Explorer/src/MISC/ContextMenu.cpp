@@ -132,7 +132,10 @@ LRESULT CALLBACK ContextMenu::HookWndProc(HWND hWnd, UINT message, WPARAM wParam
 	return ::CallWindowProc (g_OldWndProc, hWnd, message, wParam, lParam);
 }
 
-
+/// <summary>
+/// Shows a context menu based on a click location and the known running 
+/// instance of Notepad++.
+/// </summary>
 UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent, POINT pt, bool normal)
 {
 	TCHAR	szText[64] = {0};
@@ -150,32 +153,7 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 
 	if (_pidlArray != NULL)
 	{
-		if (!_hMenu)
-		{
-			_hMenu = NULL;
-			_hMenu = ::CreateMenu();
-		}
-
-		if (!GetContextMenu((void**) &pContextMenu, iMenuType))	
-			return (0);	// something went wrong
-
-		// lets fill out our popupmenu 
-		pContextMenu->QueryContextMenu( _hMenu,
-										::GetMenuItemCount(_hMenu),
-										CTX_MIN,
-										CTX_MAX,
-										CMF_EXPLORE | ((_strFirstElement.size() > 4)?CMF_CANRENAME:0));
- 
-		// subclass window to handle menurelated messages in ContextMenu 
-		g_OldWndProc	= NULL;
-		if (iMenuType > 1)	// only subclass if its version 2 or 3
-		{
-			g_OldWndProc = (WNDPROC)::SetWindowLongPtr (hWndParent, GWLP_WNDPROC, (LONG_PTR) HookWndProc);
-			if (iMenuType == 2)
-				g_IContext2 = (LPCONTEXTMENU2) pContextMenu;
-			else	// version 3
-				g_IContext3 = (LPCONTEXTMENU3) pContextMenu;
-		}
+		ConfigurePIDHandles(pContextMenu, iMenuType);
 	}
 
 	/************************************* modification for notepad ***********************************/
@@ -446,6 +424,46 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 	g_IContext3 = NULL;
 
 	return (idCommand);
+}
+
+/// <summary>
+/// Uses knowledge of <see cref="ContextMenu::_pidlArray"/> to
+/// populate key menu internal variables.<br/>
+/// Also determines the type of menu being worked with.
+/// </summary>
+/// <param name="pContextMenu">Context menu to create and evaluate</param>
+/// <param name="menuType">Menu type enum value determined by 
+/// <see cref="ContextMenu::GetContextMenu(void ** ppContextMenu, int amp; iMenuType)"/>
+/// </param>
+void ContextMenu::ConfigurePIDHandles(LPCONTEXTMENU pContextMenu, int& menuType)
+{
+	if (!_hMenu)
+	{
+		_hMenu = NULL;
+		_hMenu = ::CreateMenu();
+	}
+
+	if (!GetContextMenu((void**)&pContextMenu, menuType))
+		throw std::invalid_argument("Could not populate that form of context menu.");
+
+	// lets fill out our popupmenu 
+	pContextMenu->QueryContextMenu(_hMenu,
+		::GetMenuItemCount(_hMenu),
+		CTX_MIN,
+		CTX_MAX,
+		CMF_EXPLORE | ((_strFirstElement.size() > 4) ? CMF_CANRENAME : 0));
+
+	// subclass window to handle menu related messages in ContextMenu 
+	g_OldWndProc = NULL;
+	if (menuType > 1)	// only subclass if its version 2 or 3
+	{
+		g_OldWndProc = (WNDPROC)::SetWindowLongPtr(_hWndParent, GWLP_WNDPROC, (LONG_PTR)HookWndProc);
+		if (menuType == 2)
+			g_IContext2 = (LPCONTEXTMENU2)pContextMenu;
+		else	// version 3
+			g_IContext3 = (LPCONTEXTMENU3)pContextMenu;
+	}
+	return;
 }
 
 
