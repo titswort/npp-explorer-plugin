@@ -75,21 +75,24 @@ BOOL ContextMenu::GetContextMenu (void ** ppContextMenu, int & iMenuType)
 
 	if (icm1)
 	{	// since we got an IContextMenu interface we can now obtain the higher version interfaces via that
-		if (icm1->QueryInterface (IID_IContextMenu3, ppContextMenu) == NOERROR)
+		if (icm1->QueryInterface(IID_IContextMenu3, ppContextMenu) == NOERROR)
 			iMenuType = 3;
-		else if (icm1->QueryInterface (IID_IContextMenu2, ppContextMenu) == NOERROR)
+		else if (icm1->QueryInterface(IID_IContextMenu2, ppContextMenu) == NOERROR)
 			iMenuType = 2;
 
-		if (*ppContextMenu) 
+		if (*ppContextMenu)
 			icm1->Release(); // we can now release version 1 interface, cause we got a higher one
-		else 
-		{	
+		else
+		{
 			iMenuType = 1;
 			*ppContextMenu = icm1;	// since no higher versions were found
 		}							// redirect ppContextMenu to version 1 interface
 	}
 	else
+	{
+		throw new std::domain_error("IContextInterface could not be determined");
 		return (FALSE);	// something went wrong
+	}
 	
 	return (TRUE); // success
 }
@@ -1095,6 +1098,7 @@ bool ContextMenu::Str2CB(LPCTSTR str2cpy)
 	if (hglbCopy == NULL) 
 	{ 
 		::CloseClipboard(); 
+		throw std::exception("Could not allocate HGLOBAL hglbCopy");
 		return false; 
 	} 
 
