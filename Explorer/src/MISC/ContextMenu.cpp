@@ -25,8 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "ContextMenu.h"
 
-#include "FavesDialog.h"
-#include "nppexec_msgs.h"
+
 
 
 IContextMenu2 * g_IContext2		= NULL;
@@ -76,21 +75,24 @@ BOOL ContextMenu::GetContextMenu (void ** ppContextMenu, int & iMenuType)
 
 	if (icm1)
 	{	// since we got an IContextMenu interface we can now obtain the higher version interfaces via that
-		if (icm1->QueryInterface (IID_IContextMenu3, ppContextMenu) == NOERROR)
+		if (icm1->QueryInterface(IID_IContextMenu3, ppContextMenu) == NOERROR)
 			iMenuType = 3;
-		else if (icm1->QueryInterface (IID_IContextMenu2, ppContextMenu) == NOERROR)
+		else if (icm1->QueryInterface(IID_IContextMenu2, ppContextMenu) == NOERROR)
 			iMenuType = 2;
 
-		if (*ppContextMenu) 
+		if (*ppContextMenu)
 			icm1->Release(); // we can now release version 1 interface, cause we got a higher one
-		else 
-		{	
+		else
+		{
 			iMenuType = 1;
 			*ppContextMenu = icm1;	// since no higher versions were found
 		}							// redirect ppContextMenu to version 1 interface
 	}
 	else
+	{
+		throw new std::domain_error("IContextInterface could not be determined");
 		return (FALSE);	// something went wrong
+	}
 	
 	return (TRUE); // success
 }
@@ -133,7 +135,10 @@ LRESULT CALLBACK ContextMenu::HookWndProc(HWND hWnd, UINT message, WPARAM wParam
 	return ::CallWindowProc (g_OldWndProc, hWnd, message, wParam, lParam);
 }
 
-
+/// <summary>
+/// Shows a context menu based on a click location and the known running 
+/// instance of Notepad++.
+/// </summary>
 UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent, POINT pt, bool normal)
 {
 	TCHAR	szText[64] = {0};
@@ -151,37 +156,12 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 
 	if (_pidlArray != NULL)
 	{
-		if (!_hMenu)
-		{
-			_hMenu = NULL;
-			_hMenu = ::CreateMenu();
-		}
-
-		if (!GetContextMenu((void**) &pContextMenu, iMenuType))	
-			return (0);	// something went wrong
-
-		// lets fill out our popupmenu 
-		pContextMenu->QueryContextMenu( _hMenu,
-										::GetMenuItemCount(_hMenu),
-										CTX_MIN,
-										CTX_MAX,
-										CMF_EXPLORE | ((_strFirstElement.size() > 4)?CMF_CANRENAME:0));
- 
-		// subclass window to handle menurelated messages in ContextMenu 
-		g_OldWndProc	= NULL;
-		if (iMenuType > 1)	// only subclass if its version 2 or 3
-		{
-			g_OldWndProc = (WNDPROC)::SetWindowLongPtr (hWndParent, GWLP_WNDPROC, (LONG_PTR) HookWndProc);
-			if (iMenuType == 2)
-				g_IContext2 = (LPCONTEXTMENU2) pContextMenu;
-			else	// version 3
-				g_IContext3 = (LPCONTEXTMENU3) pContextMenu;
-		}
+		ConfigurePIDHandles(pContextMenu, iMenuType);
 	}
 
 	/************************************* modification for notepad ***********************************/
 	HMENU		hMainMenu		= ::CreatePopupMenu();
-	HMENU		hMenuNppExec	= ::CreatePopupMenu();
+	HMENU		hMenuNppExec    = NULL; 
 	bool		isFolder		= (_strFirstElement[_strFirstElement.size()-1] == '\\');
 	DWORD		dwExecVer		= 0;
 	DWORD		dwExecState		= 0;
@@ -190,16 +170,11 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 	::GetModuleFileName((HMODULE)hInst, szPath, MAX_PATH);
 
 	/* get version information */
-	CommunicationInfo	ci;
-	ci.srcModuleName	= PathFindFileName(szPath);
-	ci.internalMsg		= NPEM_GETVERDWORD;
-	ci.info				= &dwExecVer;
+	CommunicationInfo	ci = MakeCommunicationInfo(szPath, NPEM_GETVERDWORD, &dwExecVer);
 	::SendMessage(hWndNpp, NPPM_MSGTOPLUGIN, (WPARAM)exProp.nppExecProp.szAppName, (LPARAM)&ci);
 	
 	/* get acivity state of NppExec */
-	ci.srcModuleName	= PathFindFileName(szPath);
-	ci.internalMsg		= NPEM_GETSTATE;
-	ci.info				= &dwExecState;
+	ci = MakeCommunicationInfo(szPath, NPEM_GETSTATE, &dwExecState);
 	::SendMessage(hWndNpp, NPPM_MSGTOPLUGIN, (WPARAM)exProp.nppExecProp.szAppName, (LPARAM)&ci);
 
 	/* Add notepad menu items */
@@ -221,6 +196,7 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 		TCHAR					TEMP[MAX_PATH];
 		WIN32_FIND_DATA			Find			= {0};
 		HANDLE					hFind			= NULL;
+		hMenuNppExec = ::CreatePopupMenu();
 
 		/* initialize scripts */
 		_strNppScripts.clear();
@@ -364,79 +340,7 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 	{
 
 	/************************************* modification for notepad ***********************************/
-
-		switch (idCommand)
-		{
-			case CTX_RENAME:
-			{
-				Rename();
-				break;
-			}
-			case CTX_NEW_FILE:
-			{
-				newFile();
-				break;
-			}
-			case CTX_NEW_FOLDER:
-			{
-				newFolder();
-				break;
-			}
-			case CTX_FIND_IN_FILES:
-			{
-				findInFiles();
-				break;
-			}
-			case CTX_OPEN:
-			{
-				openFile();
-				break;
-			}
-			case CTX_OPEN_DIFF_VIEW:
-			{
-				openFileInOtherView();
-				break;
-			}
-			case CTX_OPEN_NEW_INST:
-			{
-				openFileInNewInstance();
-				break;
-			}
-			case CTX_OPEN_CMD:
-			{
-				openPrompt();
-				break;
-			}
-			case CTX_ADD_TO_FAVES:
-			{
-				addToFaves(isFolder);
-				break;
-			}
-			case CTX_FULL_PATH:
-			{
-				addFullPathsCB();
-				break;
-			}
-			case CTX_FULL_FILES:
-			{
-				addFileNamesCB();
-				break;
-			}
-			case CTX_GOTO_SCRIPT_PATH:
-			{
-				openScriptPath(hInst);
-				break;
-			}
-			default: /* and greater */
-			{
-				if ((idCommand >= CTX_START_SCRIPT) && (idCommand <= (CTX_START_SCRIPT + _strNppScripts.size())))
-				{
-					startNppExec(hInst, idCommand - CTX_START_SCRIPT);
-				}
-				break;
-			}
-		}
-
+		NPPContextAction(idCommand, isFolder); // Shouldn't have to pass isFolder :(
 	/*****************************************************************************************************/
 
 	}
@@ -447,6 +351,143 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 	g_IContext3 = NULL;
 
 	return (idCommand);
+}
+
+/// <summary>
+/// Uses knowledge of <see cref="ContextMenu::_pidlArray"/> to
+/// populate key menu internal variables.<br/>
+/// Also determines the type of menu being worked with.
+/// </summary>
+/// <param name="pContextMenu">Context menu to create and evaluate</param>
+/// <param name="menuType">Menu type enum value determined by 
+/// <see cref="ContextMenu::GetContextMenu(void ** ppContextMenu, int amp; iMenuType)"/>
+/// </param>
+void ContextMenu::ConfigurePIDHandles(LPCONTEXTMENU pContextMenu, int& menuType)
+{
+	if (!_hMenu)
+	{
+		_hMenu = NULL;
+		_hMenu = ::CreateMenu();
+	}
+
+	if (!GetContextMenu((void**)&pContextMenu, menuType))
+		throw std::invalid_argument("Could not populate that form of context menu.");
+
+	// lets fill out our popupmenu 
+	pContextMenu->QueryContextMenu(_hMenu,
+		::GetMenuItemCount(_hMenu),
+		CTX_MIN,
+		CTX_MAX,
+		CMF_EXPLORE | ((_strFirstElement.size() > 4) ? CMF_CANRENAME : 0));
+
+	// subclass window to handle menu related messages in ContextMenu 
+	g_OldWndProc = NULL;
+	if (menuType > 1)	// only subclass if its version 2 or 3
+	{
+		g_OldWndProc = (WNDPROC)::SetWindowLongPtr(_hWndParent, GWLP_WNDPROC, (LONG_PTR)HookWndProc);
+		if (menuType == 2)
+			g_IContext2 = (LPCONTEXTMENU2)pContextMenu;
+		else	// version 3
+			g_IContext3 = (LPCONTEXTMENU3)pContextMenu;
+	}
+	return;
+}
+
+/// <summary>
+/// Creates a struct used to help with tracking inter-application 
+/// communication based off of the current Notepad++ executable
+/// ID.
+/// </summary>
+CommunicationInfo ContextMenu::MakeCommunicationInfo(TCHAR srcModuleName[MAX_PATH], long intMsg, DWORD* version)
+{
+	CommunicationInfo ci;
+	ci.srcModuleName = PathFindFileName(srcModuleName);
+	ci.internalMsg = intMsg;
+	ci.info = version;
+	return ci;
+}
+
+/// <summary>
+/// Performs a core Notepad++ action as if it were queried through this
+/// context menu instance.
+/// </summary>
+/// <param name="idCommand">The <see cref="eContextMenuID"/> to execute.</param>
+/// <param name="">
+/// <remarks>We should add a check to enforce idCommand's type.
+/// We should also not depend on isFolder.</remarks>
+void ContextMenu::NPPContextAction(UINT idCommand, bool isFolder)
+{
+	switch (idCommand)
+	{
+	case CTX_RENAME:
+	{
+		Rename();
+		break;
+	}
+	case CTX_NEW_FILE:
+	{
+		newFile();
+		break;
+	}
+	case CTX_NEW_FOLDER:
+	{
+		newFolder();
+		break;
+	}
+	case CTX_FIND_IN_FILES:
+	{
+		findInFiles();
+		break;
+	}
+	case CTX_OPEN:
+	{
+		openFile();
+		break;
+	}
+	case CTX_OPEN_DIFF_VIEW:
+	{
+		openFileInOtherView();
+		break;
+	}
+	case CTX_OPEN_NEW_INST:
+	{
+		openFileInNewInstance();
+		break;
+	}
+	case CTX_OPEN_CMD:
+	{
+		openPrompt();
+		break;
+	}
+	case CTX_ADD_TO_FAVES:
+	{
+		addToFaves(isFolder);
+		break;
+	}
+	case CTX_FULL_PATH:
+	{
+		addFullPathsCB();
+		break;
+	}
+	case CTX_FULL_FILES:
+	{
+		addFileNamesCB();
+		break;
+	}
+	case CTX_GOTO_SCRIPT_PATH:
+	{
+		openScriptPath(_hInst);
+		break;
+	}
+	default: /* and greater */
+	{
+		if ((idCommand >= CTX_START_SCRIPT) && (idCommand <= (CTX_START_SCRIPT + _strNppScripts.size())))
+		{
+			startNppExec(_hInst, idCommand - CTX_START_SCRIPT);
+		}
+		break;
+	}
+	}
 }
 
 
@@ -1058,6 +1099,7 @@ bool ContextMenu::Str2CB(LPCTSTR str2cpy)
 	if (hglbCopy == NULL) 
 	{ 
 		::CloseClipboard(); 
+		throw std::exception("Could not allocate HGLOBAL hglbCopy");
 		return false; 
 	} 
 

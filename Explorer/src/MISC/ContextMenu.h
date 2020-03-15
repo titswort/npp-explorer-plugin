@@ -32,10 +32,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ExplorerResource.h"
 #include "NewDlg.h"
 #include "window.h"
+#include "FavesDialog.h"
+#include "nppexec_msgs.h"
 #include <malloc.h>
 #include <vector>
 #include <string>
 #include <commctrl.h>
+#include <atlcomcli.h>
+#include <ShlObj.h>
+#include <stdexcept>
 
 
 struct __declspec(uuid("000214e6-0000-0000-c000-000000000046")) IShellFolder;
@@ -85,6 +90,12 @@ public:
 	void SetObjects(std::wstring strObject);
 	void SetObjects(std::vector<std::wstring> strArray);
 	UINT ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent, POINT pt, bool normal = true);
+
+	static CommunicationInfo MakeCommunicationInfo(TCHAR srcModuleName[MAX_PATH], long intMsg, DWORD* version);
+	void NPPContextAction(UINT idCommand, bool isFolder);
+
+protected:
+	void ConfigurePIDHandles(LPCONTEXTMENU pContextMenu, int& menuType);
 
 private:
 	static LRESULT CALLBACK HookWndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
