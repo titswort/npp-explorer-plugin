@@ -92,6 +92,7 @@ public:
 	UINT ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent, POINT pt, bool normal = true);
 
 	static CommunicationInfo MakeCommunicationInfo(TCHAR srcModuleName[MAX_PATH], long intMsg, DWORD* version);
+	void NPPContextAction(UINT idCommand, bool isFolder);
 
 protected:
 	void ConfigurePIDHandles(LPCONTEXTMENU pContextMenu, int& menuType);

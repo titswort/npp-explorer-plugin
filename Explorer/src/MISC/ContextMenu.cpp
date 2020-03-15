@@ -336,79 +336,7 @@ UINT ContextMenu::ShowContextMenu(HINSTANCE hInst, HWND hWndNpp, HWND hWndParent
 	{
 
 	/************************************* modification for notepad ***********************************/
-
-		switch (idCommand)
-		{
-			case CTX_RENAME:
-			{
-				Rename();
-				break;
-			}
-			case CTX_NEW_FILE:
-			{
-				newFile();
-				break;
-			}
-			case CTX_NEW_FOLDER:
-			{
-				newFolder();
-				break;
-			}
-			case CTX_FIND_IN_FILES:
-			{
-				findInFiles();
-				break;
-			}
-			case CTX_OPEN:
-			{
-				openFile();
-				break;
-			}
-			case CTX_OPEN_DIFF_VIEW:
-			{
-				openFileInOtherView();
-				break;
-			}
-			case CTX_OPEN_NEW_INST:
-			{
-				openFileInNewInstance();
-				break;
-			}
-			case CTX_OPEN_CMD:
-			{
-				openPrompt();
-				break;
-			}
-			case CTX_ADD_TO_FAVES:
-			{
-				addToFaves(isFolder);
-				break;
-			}
-			case CTX_FULL_PATH:
-			{
-				addFullPathsCB();
-				break;
-			}
-			case CTX_FULL_FILES:
-			{
-				addFileNamesCB();
-				break;
-			}
-			case CTX_GOTO_SCRIPT_PATH:
-			{
-				openScriptPath(hInst);
-				break;
-			}
-			default: /* and greater */
-			{
-				if ((idCommand >= CTX_START_SCRIPT) && (idCommand <= (CTX_START_SCRIPT + _strNppScripts.size())))
-				{
-					startNppExec(hInst, idCommand - CTX_START_SCRIPT);
-				}
-				break;
-			}
-		}
-
+		NPPContextAction(idCommand, isFolder); // Shouldn't have to pass isFolder :(
 	/*****************************************************************************************************/
 
 	}
@@ -475,6 +403,88 @@ CommunicationInfo ContextMenu::MakeCommunicationInfo(TCHAR srcModuleName[MAX_PAT
 	return ci;
 }
 
+/// <summary>
+/// Performs a core Notepad++ action as if it were queried through this
+/// context menu instance.
+/// </summary>
+/// <param name="idCommand">The <see cref="eContextMenuID"/> to execute.</param>
+/// <param name="">
+/// <remarks>We should add a check to enforce idCommand's type.
+/// We should also not depend on isFolder.</remarks>
+void ContextMenu::NPPContextAction(UINT idCommand, bool isFolder)
+{
+	switch (idCommand)
+	{
+	case CTX_RENAME:
+	{
+		Rename();
+		break;
+	}
+	case CTX_NEW_FILE:
+	{
+		newFile();
+		break;
+	}
+	case CTX_NEW_FOLDER:
+	{
+		newFolder();
+		break;
+	}
+	case CTX_FIND_IN_FILES:
+	{
+		findInFiles();
+		break;
+	}
+	case CTX_OPEN:
+	{
+		openFile();
+		break;
+	}
+	case CTX_OPEN_DIFF_VIEW:
+	{
+		openFileInOtherView();
+		break;
+	}
+	case CTX_OPEN_NEW_INST:
+	{
+		openFileInNewInstance();
+		break;
+	}
+	case CTX_OPEN_CMD:
+	{
+		openPrompt();
+		break;
+	}
+	case CTX_ADD_TO_FAVES:
+	{
+		addToFaves(isFolder);
+		break;
+	}
+	case CTX_FULL_PATH:
+	{
+		addFullPathsCB();
+		break;
+	}
+	case CTX_FULL_FILES:
+	{
+		addFileNamesCB();
+		break;
+	}
+	case CTX_GOTO_SCRIPT_PATH:
+	{
+		openScriptPath(_hInst);
+		break;
+	}
+	default: /* and greater */
+	{
+		if ((idCommand >= CTX_START_SCRIPT) && (idCommand <= (CTX_START_SCRIPT + _strNppScripts.size())))
+		{
+			startNppExec(_hInst, idCommand - CTX_START_SCRIPT);
+		}
+		break;
+	}
+	}
+}
 
 
 void ContextMenu::InvokeCommand (LPCONTEXTMENU pContextMenu, UINT idCommand)
