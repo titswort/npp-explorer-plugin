@@ -117,38 +117,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE EnumDAdvise( 
         /* [out] */ IEnumSTATDATA __RPC_FAR *__RPC_FAR *ppenumAdvise);
 
-	//IAsyncOperation
-    //virtual HRESULT STDMETHODCALLTYPE SetAsyncMode( 
-    //    /* [in] */ BOOL fDoOpAsync)
-	//{
-	//	return E_NOTIMPL;
-	//}
-    //
-    //virtual HRESULT STDMETHODCALLTYPE GetAsyncMode( 
-    //    /* [out] */ BOOL __RPC_FAR *pfIsOpAsync)
-	//{
-	//	return E_NOTIMPL;
-	//}
-    //
-    //virtual HRESULT STDMETHODCALLTYPE StartOperation( 
-    //    /* [optional][unique][in] */ IBindCtx __RPC_FAR *pbcReserved)
-	//{
-	//	return E_NOTIMPL;
-	//}
-    //
-    //virtual HRESULT STDMETHODCALLTYPE InOperation( 
-    //    /* [out] */ BOOL __RPC_FAR *pfInAsyncOp)
-	//{
-	//	return E_NOTIMPL;
-	//}
-    //
-    //virtual HRESULT STDMETHODCALLTYPE EndOperation( 
-    //    /* [in] */ HRESULT hResult,
-    //    /* [unique][in] */ IBindCtx __RPC_FAR *pbcReserved,
-    //    /* [in] */ DWORD dwEffects)
-	//{
-	//	return E_NOTIMPL;
-	//}
+	
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
